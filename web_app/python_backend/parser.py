@@ -17,8 +17,6 @@ def is_removal_target(g):
 def get_top_n_count(adapter_type: str) -> int:
     if adapter_type == "major":
         return 100
-    elif adapter_type == "t_subtype":
-        return 500
     return 300
 
 def prepare_expression_matrix(file_path: str) -> pd.DataFrame:

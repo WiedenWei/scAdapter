@@ -75,21 +75,17 @@ async def process_job_queue(job_queue: asyncio.Queue, job_states: dict):
         print(f"\n[START] Job {job_id} for {job_data['email']}")
 
         try:
-            # 1. Parse and filter the dataset
             df = prepare_expression_matrix(job_data["file_path"])
             top_n = get_top_n_count(job_data["annotation_type"])
             
             annotated_labels = []
             total_cells = len(df)
 
-            # 2. Sequential Inference Loop with SSL-Bypassed Connection Pooling
-            # Adding verify=False completely ignores self-signed certificate errors
             async with httpx.AsyncClient(verify=False) as client:
                 for index, (row_label, row_data) in enumerate(df.iterrows()):
                     
                     gene_language = generate_gene_language(row_data, top_n)
                     
-                    # 3. Construct the precise message format dynamically
                     system, user, tissue, adapter = get_system_user(job_data["annotation_type"],
                                                            job_data["tissue_type"],
                                                            job_data["tissue_state"])
@@ -112,20 +108,16 @@ async def process_job_queue(job_queue: asyncio.Queue, job_states: dict):
                     if (index + 1) % 100 == 0 or (index + 1) == total_cells:
                         print(f"  -> {index + 1}/{total_cells} cells annotated...")
 
-            # 5. Save Results (Optimized for Email)
-            # Create a lightweight DataFrame using the original cell_id index
             results_df = pd.DataFrame(
                 {"scAdapter_Annotation": annotated_labels}, 
                 index=df.index
             )
             
-            # Explicitly name the index column so it has a header in the CSV
             results_df.index.name = "cell_id"
             
             result_path = f"./data/results/{job_id}_annotated.csv"
             results_df.to_csv(result_path)
             
-            # 6. Email User
             await send_result_email(job_data["email"], job_id, result_path)
             
             job_states[job_id]["status"] = "Completed"
@@ -136,7 +128,6 @@ async def process_job_queue(job_queue: asyncio.Queue, job_states: dict):
             job_states[job_id]["status"] = "Failed"
             
         finally:
-            # Clean up the original upload
             if os.path.exists(job_data["file_path"]):
                 os.remove(job_data["file_path"])
                 

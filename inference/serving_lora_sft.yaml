@@ -1,0 +1,6 @@
+model_name_or_path: models/gpt_oss_20b
+adapter_name_or_path: saves/gpt-20b/lora
+template: gpt
+finetuning_type: lora
+infer_backend: huggingface
+trust_remote_code: true
